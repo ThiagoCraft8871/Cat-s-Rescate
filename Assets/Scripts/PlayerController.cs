@@ -55,11 +55,11 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
         {
-            anim.SetBool("crouch", true);
+            anim.SetBool("Crouch", true);
         }
         else
         {
-            anim.SetBool("crouch", false);
+            anim.SetBool("Crouch", false);
         }
         if (transform.position.y<RespawnHeight)
         {
