@@ -4,15 +4,18 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] float speed=5f;
-    [SerializeField] float jumpForce=7f;
+    [SerializeField] float speed = 5f;
+    [SerializeField] float jumpForce = 7f;
     bool isGrounded = false;
     Rigidbody2D rb;
-    [SerializeField] LayerMask groundLayer; 
+    [SerializeField] LayerMask groundLayer;
     SpriteRenderer sprite;
     Animator anim;
     Vector2 savePoint;
     [SerializeField] float RespawnHeight;
+    private bool recibiendoDanio;
+    public float fuerzaRebote = 10f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -26,7 +29,7 @@ public class PlayerController : MonoBehaviour
         float horizontalInput = Input.GetAxis("Horizontal");
         if (horizontalInput > 0)
         {
-            sprite.flipX = false; 
+            sprite.flipX = false;
         }
         if (horizontalInput < 0)
         {
@@ -47,11 +50,11 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
-
         anim.SetFloat("Y", rb.velocity.y);
-        
-        if (isGrounded) 
+        if (isGrounded)
+        {
             anim.SetFloat("Y", 0);
+        }
 
         if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
         {
@@ -61,13 +64,19 @@ public class PlayerController : MonoBehaviour
         {
             anim.SetBool("Crouch", false);
         }
-        if (transform.position.y<RespawnHeight)
+
+        if (transform.position.y < RespawnHeight)
         {
             transform.position = savePoint;
         }
+
+        // (Se eliminó la línea errónea con 'direccion' que estaba aquí)
+
         Collider2D col = GetComponent<Collider2D>();
         isGrounded = Physics2D.OverlapCircle(transform.position - transform.up * ((col.bounds.extents.y / transform.localScale.y - col.offset.y) * transform.localScale.y), 0.01f, groundLayer);
+        anim.SetBool("recibeDanio", recibiendoDanio);
     }
+
     void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.tag == "checkpoint")
@@ -76,6 +85,7 @@ public class PlayerController : MonoBehaviour
             savePoint = collision.transform.position;
         }
     }
+
     private void OnTriggerExit2D(Collider2D collision)
     {
         // Lógica para el Checkpoint
@@ -91,14 +101,32 @@ public class PlayerController : MonoBehaviour
             collision.isTrigger = false;
         }
     }
+
     private void OnCollisionStay2D(Collision2D collision)
     {
-        if (collision.transform.GetComponent<PlatformEffector2D>())// Comprobar si el objeto sobre el que estamos parados tiene un componente Platform Effector 2D
+        if (collision.transform.GetComponent<PlatformEffector2D>())
         {
-            if (Input.GetKey(KeyCode.S)) // If tre S key is pressed
-            collision.transform.GetComponent<Collider2D>().isTrigger = true;// Habilitando isTrigger para el objeto en el que estamos parados
-
+            if (Input.GetKey(KeyCode.S))
+            {
+                collision.transform.GetComponent<Collider2D>().isTrigger = true;
+            }
         }
     }
 
+    public void RecibeDanio(Vector2 direccion, int cantDamage)
+    {
+        if (!recibiendoDanio)
+        {
+            recibiendoDanio = true;
+            Vector2 rebote = new Vector2(transform.position.x - direccion.x, 1).normalized;
+            
+            // CORREGIDO: AddForce en lugar de AddFroce
+            rb.AddForce(rebote * fuerzaRebote, ForceMode2D.Impulse);
+        }
+    }
+
+    public void DesactivaDanio()
+    {
+        recibiendoDanio = false;
+    }
 }
