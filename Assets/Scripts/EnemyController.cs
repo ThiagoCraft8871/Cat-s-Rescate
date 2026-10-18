@@ -11,14 +11,20 @@ public class NewBehaviourScript : MonoBehaviour
     private Vector2 movement;
     private bool enMovimiento;
     private Animator animator;
+    private bool recibiendoDanio;
+    public float fuerzaRebote = 10f;
+    [SerializeField] float duracionDanio = 0.4f;
+    private float contadorDanio;
+    private bool playerVivo = true; // Inicializado en true para que comience a persiguir
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         
-        // Opcional pero útil: buscar automáticamente al jugador si no se asignó en el Inspector
+        // Buscar automáticamente al jugador si no se asignó en el Inspector
         if (player == null)
         {
+            playerVivo = true;
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
             {
@@ -30,9 +36,31 @@ public class NewBehaviourScript : MonoBehaviour
 
     void Update()
     {
-        // Seguridad por si el jugador se destruye o no está asignado
+        // Si el jugador no existe en la escena, detenemos todo
         if (player == null) return;
 
+        // Verificamos el estado de vida del jugador en tiempo real
+        PlayerController playerController = player.GetComponent<PlayerController>();
+        if (playerController != null && playerController.muerto)
+        {
+            // Si el jugador está muerto, el enemigo se detiene y pasa a idle
+            movement = Vector2.zero;
+            enMovimiento = false;
+            animator.SetBool("enMovimiento", false);
+            return; // Sale del Update para que no siga persiguiendo
+        }
+
+        // Si sigue vivo, continúa con su lógica normal
+        if (playerVivo)
+        {
+            Movimiento();
+        }
+        
+        animator.SetBool("enMovimiento", enMovimiento);
+    }
+
+    private void Movimiento()
+    {
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
         if (distanceToPlayer < detectionRadius)
         {
@@ -53,20 +81,57 @@ public class NewBehaviourScript : MonoBehaviour
             movement = Vector2.zero;
             enMovimiento = false;
         }
-        rb.MovePosition(rb.position + movement * speed * Time.deltaTime);
-        animator.SetBool("enMovimiento", enMovimiento);
+        
+        if(!recibiendoDanio)
+            rb.MovePosition(rb.position + movement * speed * Time.deltaTime);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
-{
-    if (collision.gameObject.CompareTag("Player"))
     {
-        PlayerController playerController = collision.gameObject.GetComponent<PlayerController>();
-        if (playerController != null)
+        if (collision.gameObject.CompareTag("Player"))
         {
-            // CAMBIO: Asegúrate de que se llame 'RecibeDanio' con R y D mayúsculas
-            playerController.RecibeDanio(transform.position, 1);
+            PlayerController playerController = collision.gameObject.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                // CORREGIDO: Se llama una sola vez pasando la posición del enemigo correctamente
+                playerController.RecibeDanio(transform.position, 1);
+            }
         }
     }
-}
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("ataque"))
+        {
+            // Aquí sí existe 'collision' y podemos calcular la dirección del ataque del jugador
+            Vector2 direccionDanio = new Vector2(collision.gameObject.transform.position.x, 0);
+            RecibeDanio(direccionDanio, 1);
+        }
+    }
+
+    public void RecibeDanio(Vector2 direccionEnemigo, int cantDamage)
+    {
+        if (!recibiendoDanio)
+        {
+            recibiendoDanio = true;
+            contadorDanio = duracionDanio; 
+
+            rb.velocity = Vector2.zero; 
+            float direccionX = transform.position.x > direccionEnemigo.x ? 1f : -1f;
+            Vector2 fuerzaDeRebote = new Vector2(direccionX, 1.5f).normalized;
+            rb.AddForce(fuerzaDeRebote * fuerzaRebote, ForceMode2D.Impulse);
+            StartCoroutine(DesactivaDanio());
+            if(!playerVivo)
+            {
+                enMovimiento = false;
+            }
+        }
+    }
+
+    IEnumerator DesactivaDanio()
+    {
+        yield return new WaitForSeconds(0.4f);
+        recibiendoDanio = false;
+        rb.velocity = Vector2.zero;
+    }
 }
