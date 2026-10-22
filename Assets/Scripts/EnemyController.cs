@@ -15,7 +15,9 @@ public class NewBehaviourScript : MonoBehaviour
     public float fuerzaRebote = 10f;
     [SerializeField] float duracionDanio = 0.4f;
     private float contadorDanio;
-    private bool playerVivo = true; // Inicializado en true para que comience a persiguir
+    private bool playerVivo = true;
+    private bool muerto;
+    public int vida = 3;
 
     void Start()
     {
@@ -51,12 +53,13 @@ public class NewBehaviourScript : MonoBehaviour
         }
 
         // Si sigue vivo, continúa con su lógica normal
-        if (playerVivo)
+        if (playerVivo && !muerto)
         {
             Movimiento();
         }
         
         animator.SetBool("enMovimiento", enMovimiento);
+        animator.SetBool("muerto", muerto);
     }
 
     private void Movimiento()
@@ -113,17 +116,25 @@ public class NewBehaviourScript : MonoBehaviour
     {
         if (!recibiendoDanio)
         {
+            vida -= cantDamage;
             recibiendoDanio = true;
-            contadorDanio = duracionDanio; 
-
-            rb.velocity = Vector2.zero; 
-            float direccionX = transform.position.x > direccionEnemigo.x ? 1f : -1f;
-            Vector2 fuerzaDeRebote = new Vector2(direccionX, 1.5f).normalized;
-            rb.AddForce(fuerzaDeRebote * fuerzaRebote, ForceMode2D.Impulse);
-            StartCoroutine(DesactivaDanio());
-            if(!playerVivo)
+            if (vida <= 0)
             {
+                muerto = true;
                 enMovimiento = false;
+            }
+            else
+            {
+                contadorDanio = duracionDanio; 
+                rb.velocity = Vector2.zero; 
+                float direccionX = transform.position.x > direccionEnemigo.x ? 1f : -1f;
+                Vector2 fuerzaDeRebote = new Vector2(direccionX, 1.5f).normalized;
+                rb.AddForce(fuerzaDeRebote * fuerzaRebote, ForceMode2D.Impulse);
+                StartCoroutine(DesactivaDanio());
+                if(!playerVivo)
+                {
+                    enMovimiento = false;
+                }
             }
         }
     }
@@ -133,5 +144,9 @@ public class NewBehaviourScript : MonoBehaviour
         yield return new WaitForSeconds(0.4f);
         recibiendoDanio = false;
         rb.velocity = Vector2.zero;
+    }
+    public void EliminarCuerpo()
+    {
+        Destroy(gameObject);
     }
 }

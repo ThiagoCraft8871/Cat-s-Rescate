@@ -21,7 +21,7 @@ public class PlayerController : MonoBehaviour
     private float contadorDanio;
     [Header("Configuración de Ataque")]
     [SerializeField] float duracionAtaque = 0.3f; // Cuánto dura la animación de ataque activa
-    [SerializeField] float cooldownAtaque = 0.5f; // Tiempo quebe esperar para volver a atacar
+    [SerializeField] float cooldownAtaque = 0.5f; // Tiempo que debe esperar para volver a atacar
     private float contadorAtaque;
     private float tiempoSiguienteAtaque = 0f;
     [SerializeField] GameObject rangoAtaqueObject;
@@ -38,7 +38,6 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-
         if (!muerto)
         {
             // Control del temporizador de daño automático
@@ -119,9 +118,21 @@ public class PlayerController : MonoBehaviour
                 anim.SetBool("Crouch", false);
             }
 
+            // --- DETECCIÓN DE CAÍDA AL VACÍO / HUECOS OSCUROS ---
             if (transform.position.y < RespawnHeight)
             {
-                transform.position = savePoint;
+                muerto = true;
+                vida = 0;
+                rb.velocity = Vector2.zero; // Detiene la caída al instante
+
+                // Activa la animación de muerte
+                anim.SetBool("muerto", true);
+
+                // Llama al GameManager para mostrar el panel y congelar la pantalla
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.ActivarGameOver();
+                }
             }
 
             // Detectar entrada de ataque con Cooldown
@@ -130,15 +141,14 @@ public class PlayerController : MonoBehaviour
                 Atacando();
                 tiempoSiguienteAtaque = Time.time + cooldownAtaque;
             }
-
         }
 
-            Collider2D col = GetComponent<Collider2D>();
-            isGrounded = Physics2D.OverlapCircle(transform.position - transform.up * ((col.bounds.extents.y / transform.localScale.y - col.offset.y) * transform.localScale.y), 0.01f, groundLayer);
-            
-            anim.SetBool("recibeDanio", recibiendoDanio);
-            anim.SetBool("Atacando", atacando);
-            anim.SetBool("muerto", muerto);
+        Collider2D col = GetComponent<Collider2D>();
+        isGrounded = Physics2D.OverlapCircle(transform.position - transform.up * ((col.bounds.extents.y / transform.localScale.y - col.offset.y) * transform.localScale.y), 0.01f, groundLayer);
+        
+        anim.SetBool("recibeDanio", recibiendoDanio);
+        anim.SetBool("Atacando", atacando);
+        anim.SetBool("muerto", muerto);
     }
 
     void OnTriggerEnter2D(Collider2D collision)
@@ -188,7 +198,11 @@ public class PlayerController : MonoBehaviour
             {
                 muerto = true;
                 rb.velocity = Vector2.zero;
-                // Aquí puedes añadir lógica extra de muerte si lo deseas (animación, desactivar sprite, etc.)
+                
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.ActivarGameOver();
+                }
             }
             else
             {
@@ -215,5 +229,23 @@ public class PlayerController : MonoBehaviour
     public void DesactivaAtaque()
     {
         atacando = false;
+    }
+    public void MorirPorCaida()
+    {
+        if (!muerto)
+        {
+            vida = 0; // Esto hace que la barra de vida baje a 0 inmediatamente
+            muerto = true;
+            rb.velocity = Vector2.zero;
+            
+            // Activa la animación de muerte
+            anim.SetBool("muerto", true);
+
+            // Llama al GameManager para mostrar la pantalla de muerte y congelar todo
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ActivarGameOver();
+            }
+        }
     }
 }
