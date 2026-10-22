@@ -164,7 +164,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   detectionRadius: 10
-  speed: 20
+  speed: 5
   fuerzaRebote: 10
   duracionDanio: 0.4
   vida: 1

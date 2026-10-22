@@ -18,6 +18,9 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
+        // Forzamos los FPS a 60 para evitar que el juego acelere en navegadores web
+        Application.targetFrameRate = 60;
+
         if (Instance == null)
         {
             Instance = this;
