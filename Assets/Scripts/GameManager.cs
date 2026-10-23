@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     private bool gameOverActivo = false;
     public GameObject FinPanel; // Arrastra aquí tu "FinPanel" desde Unity
     private bool juegoTerminado = false;
+    [Header("Monedas")]
+    public int monedas = 0;
+    public TextMeshProUGUI textoMonedas;
 
     void Awake()
     {
@@ -54,6 +57,27 @@ public class GameManager : MonoBehaviour
                 IrAlMenu();
             }
         }
+    }
+
+    public void SumarMonedas(int cantidad)
+    {
+        monedas += cantidad;
+        ActualizarMonedasUI();
+        GuardarMonedas();
+    }
+    void ActualizarMonedasUI()
+    {
+        if(textoMonedas != null)
+            textoMonedas.text = "x " + monedas.ToString();
+    }
+    void GuardarMonedas()
+    {
+        PlayerPrefs.SetInt("Monedas", monedas);
+        PlayerPrefs.Save();
+    }
+    void CargarMonedas()
+    {
+        monedas = PlayerPrefs.GetInt("Monedas", 0);
     }
 
     public void ActivarGameOver() 

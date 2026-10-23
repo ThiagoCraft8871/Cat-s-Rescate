@@ -168,6 +168,10 @@ MonoBehaviour:
   fuerzaRebote: 10
   duracionDanio: 0.4
   vida: 1
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  distanciaSueloAdelante: 0.6
 --- !u!95 &7509260620633165105
 Animator:
   serializedVersion: 5

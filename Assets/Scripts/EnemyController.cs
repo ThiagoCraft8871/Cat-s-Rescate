@@ -8,7 +8,6 @@ public class NewBehaviourScript : MonoBehaviour
     public float detectionRadius = 5.0f;
     public float speed = 2.0f;
     private Rigidbody2D rb;
-    private Vector2 movement;
     private bool enMovimiento;
     private Animator animator;
     private bool recibiendoDanio;
@@ -46,14 +45,14 @@ public class NewBehaviourScript : MonoBehaviour
         if (playerController != null && playerController.muerto)
         {
             // Si el jugador está muerto, el enemigo se detiene y pasa a idle
-            movement = Vector2.zero;
             enMovimiento = false;
+            rb.velocity = new Vector2(0, rb.velocity.y);
             animator.SetBool("enMovimiento", false);
-            return; // Sale del Update para que no siga persiguiendo
+            return; 
         }
 
-        // Si sigue vivo, continúa con su lógica normal
-        if (playerVivo && !muerto)
+        // Si sigue vivo y no está muerto, continúa con su lógica normal
+        if (playerVivo && !muerto && !recibiendoDanio)
         {
             Movimiento();
         }
@@ -68,25 +67,25 @@ public class NewBehaviourScript : MonoBehaviour
         if (distanceToPlayer < detectionRadius)
         {
             Vector2 direction = (player.position - transform.position).normalized;
+            
             if(direction.x < 0)
             {
                 transform.localScale = new Vector3(1, 1, 1);
             }
-            if(direction.x > 0)
+            else if(direction.x > 0)
             {
                 transform.localScale = new Vector3(-1, 1, 1);
             }
-            movement = new Vector2(direction.x, 0);
+
+            // Usamos rb.velocity en lugar de MovePosition para respetar la gravedad y el suelo (Tilemap)
+            rb.velocity = new Vector2(direction.x * speed, rb.velocity.y);
             enMovimiento = true;
         }
         else
         {
-            movement = Vector2.zero;
+            rb.velocity = new Vector2(0, rb.velocity.y);
             enMovimiento = false;
         }
-        
-        if(!recibiendoDanio)
-            rb.MovePosition(rb.position + movement * speed * Time.deltaTime);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -96,7 +95,6 @@ public class NewBehaviourScript : MonoBehaviour
             PlayerController playerController = collision.gameObject.GetComponent<PlayerController>();
             if (playerController != null)
             {
-                // CORREGIDO: Se llama una sola vez pasando la posición del enemigo correctamente
                 playerController.RecibeDanio(transform.position, 1);
             }
         }
@@ -106,7 +104,6 @@ public class NewBehaviourScript : MonoBehaviour
     {
         if (collision.CompareTag("ataque"))
         {
-            // Aquí sí existe 'collision' y podemos calcular la dirección del ataque del jugador
             Vector2 direccionDanio = new Vector2(collision.gameObject.transform.position.x, 0);
             RecibeDanio(direccionDanio, 1);
         }
@@ -118,10 +115,12 @@ public class NewBehaviourScript : MonoBehaviour
         {
             vida -= cantDamage;
             recibiendoDanio = true;
+            enMovimiento = false;
+
             if (vida <= 0)
             {
                 muerto = true;
-                enMovimiento = false;
+                rb.velocity = Vector2.zero;
             }
             else
             {
@@ -131,20 +130,16 @@ public class NewBehaviourScript : MonoBehaviour
                 Vector2 fuerzaDeRebote = new Vector2(direccionX, 1.5f).normalized;
                 rb.AddForce(fuerzaDeRebote * fuerzaRebote, ForceMode2D.Impulse);
                 StartCoroutine(DesactivaDanio());
-                if(!playerVivo)
-                {
-                    enMovimiento = false;
-                }
             }
         }
     }
 
     IEnumerator DesactivaDanio()
     {
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(duracionDanio);
         recibiendoDanio = false;
-        rb.velocity = Vector2.zero;
     }
+
     public void EliminarCuerpo()
     {
         Destroy(gameObject);

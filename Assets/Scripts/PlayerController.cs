@@ -136,7 +136,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // Detectar entrada de ataque con Cooldown
-            if (Input.GetKeyDown(KeyCode.Z) && !atacando && Time.time >= tiempoSiguienteAtaque)
+            if (Input.GetKeyDown(KeyCode.J) && !atacando && Time.time >= tiempoSiguienteAtaque)
             {
                 Atacando();
                 tiempoSiguienteAtaque = Time.time + cooldownAtaque;
